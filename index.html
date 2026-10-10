@@ -175,7 +175,13 @@
       const yOffsetMeters = parseInt(ui.offset.value) / 1000;
       ui.container.setAttribute('position', `0 ${yOffsetMeters} 0`);
     }
-
+    const marker = document.querySelector('a-marker');
+    marker.addEventListener('markerFound', () => {
+      console.log('>>> MARKER DETECTED! <<<');
+    });
+    marker.addEventListener('markerLost', () => {
+      console.log('--- Marker Lost ---');
+    });
     // Attach listeners
     ui.reader.addEventListener('change', refreshAR);
     ui.formFactor.addEventListener('change', refreshAR);
