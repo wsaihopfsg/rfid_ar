@@ -172,15 +172,18 @@
       refreshAR();
     }
 
-    function refreshAR() {
-      // Construct filename: IQx3_FP_IQC21-50_PT4.svg
-      const filename = `${ui.reader.value}_${ui.formFactor.value}_${ui.tagForm.value}_${ui.power.value}.svg`;
-      ui.svgLayer.setAttribute('dynamic-svg', 'src', filename);
-      
-      // Update Y-axis offset (convert mm to meters for AR space)
-      const yOffsetMeters = parseInt(ui.offset.value) / 1000;
-      ui.container.setAttribute('position', `0 ${yOffsetMeters} 0`);
-    }
+  function refreshAR() {
+    const filename = `${ui.reader.value}_${ui.formFactor.value}_${ui.tagForm.value}_${ui.power.value}.svg`;
+    ui.svgLayer.setAttribute('dynamic-svg', 'src', filename);
+  
+    // 1 AR unit = 46mm (the physical width of our printed marker)
+    const offsetMm = parseInt(ui.offset.value); 
+    const yOffsetARUnits = offsetMm / 46; 
+  
+    // Apply offset to the Y-axis (pushing straight out toward the camera)
+    ui.container.setAttribute('position', `0 ${yOffsetARUnits} 0`);
+  }
+    
     const marker = document.querySelector('a-marker');
     marker.addEventListener('markerFound', () => {
       console.log('>>> MARKER DETECTED! <<<');
