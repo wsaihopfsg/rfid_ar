@@ -14,9 +14,12 @@
       position: absolute; top: 10px; left: 10px; z-index: 1000; 
       background: rgba(255, 255, 255, 0.9); padding: 15px; 
       border-radius: 8px; font-family: sans-serif; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      max-height: 90vh; overflow-y: auto;
     }
     .ui-panel label { display: block; margin-top: 8px; font-size: 14px; font-weight: bold; }
-    .ui-panel select { width: 100%; margin-top: 4px; padding: 5px; }
+    .ui-panel select, .ui-panel input { 
+      width: 100%; box-sizing: border-box; margin-top: 4px; padding: 5px; 
+    }
   </style>
 </head>
 
@@ -24,6 +27,9 @@
 
   <!-- User Interface -->
   <div class="ui-panel">
+    <label>Anchor Size (mm)</label>
+    <input type="number" id="anchor-size" value="46" min="1" step="1">
+
     <label>Reader</label>
     <select id="reader">
       <option value="IQx3" selected>IQx3</option>
@@ -36,7 +42,6 @@
       <option value="F61">F61</option>
       <option value="18GM">18GM</option>
       <option value="F198">F198</option>
-      <!-- Placeholders for future form factors -->
     </select>
 
     <label>Tag-Chip</label>
@@ -63,22 +68,20 @@
     <select id="offset">
       <option value="0" selected>0mm (Flush)</option>
       <option value="10">10mm</option>
-      <option value="50">50mm</option>
+      <option value="20">20mm</option>
     </select>
   </div>
 
   <!-- AR Scene -->
   <a-scene embedded arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
     
-    <!-- Link to your trained QR Code pattern file -->
-    <!-- Define the size as exactly 0.05 meters (50mm) -->
-    <a-marker type="pattern" url="pattern-Assym_F.patt" patternRatio="0.5" size="0.046">
+    <!-- URL points to your trained pattern file -->
+    <a-marker id="ar-marker" type="pattern" url="pattern-Assym_F.patt" patternRatio="0.5" size="0.046">
       
-      <!-- Container handles the physical 10mm/20mm Y-axis offset above the QR code -->
+      <!-- Container handles the physical offset along the Y-axis (normal to the marker) -->
       <a-entity id="map-container" position="0 0 0">
         
-        <!-- Custom component loads the dynamically generated SVG filename -->
-        <!-- Rotation -90 on X lays the 2D SVG flat onto the table plane -->
+        <!-- rotation="0 0 0" projects the coverage map outward toward the camera -->
         <a-entity id="svg-layer" dynamic-svg="" rotation="0 0 0"></a-entity>
         
       </a-entity>
@@ -89,31 +92,42 @@
   </a-scene>
 
   <script>
-    // 1. Custom A-Frame Component to render SVGs as 3D geometry
+    // 1. Custom A-Frame Component to render and scale SVGs dynamically
     AFRAME.registerComponent('dynamic-svg', {
-      schema: { src: { type: 'string', default: '' } },
+      schema: { 
+        src: { type: 'string', default: '' },
+        markerSize: { type: 'number', default: 46 }
+      },
       
+      init: function () {
+        this.svgGroup = null;
+      },
+
       update: function (oldData) {
-        if (!this.data.src || this.data.src === oldData.src) return;
         const el = this.el;
-        
+        const markerSize = this.data.markerSize > 0 ? this.data.markerSize : 46;
+        const scaleFactor = 1 / markerSize;
+
+        // If only markerSize changed and SVG is already loaded, update scale without reloading
+        if (this.data.src === oldData.src && this.svgGroup) {
+          this.svgGroup.scale.set(scaleFactor, -scaleFactor, scaleFactor);
+          return;
+        }
+
+        if (!this.data.src) return;
+
         // Clear previous SVG mesh
         while (el.object3D.children.length > 0) {
           el.object3D.remove(el.object3D.children[0]);
         }
 
+        const self = this;
         const loader = new THREE.SVGLoader();
         loader.load(this.data.src, function (data) {
           const paths = data.paths;
           const group = new THREE.Group();
           
-          // Apply 0.001 scale to convert millimeter SVG coordinates to AR meters
-          //group.scale.set(0.001, 0.001, 0.001); // Negative Y flips the SVG right-side up
-          // Convert millimeter SVG coordinates into AR.js relative units
-          // where 1 AR unit = the physical marker width (46mm)
-          const markerSizeMm = 46;
-          const scaleFactor = 1 / markerSizeMm; 
-
+          // Convert mm coordinates into AR.js units (1 AR unit = markerSize mm)
           group.scale.set(scaleFactor, -scaleFactor, scaleFactor);
           
           for (let i = 0; i < paths.length; i++) {
@@ -132,6 +146,7 @@
               group.add(mesh);
             }
           }
+          self.svgGroup = group;
           el.object3D.add(group);
         }, 
         undefined, 
@@ -141,22 +156,24 @@
       }
     });
 
-    // 2. UI Logic and Event Listeners
+    // 2. UI References
     const ui = {
+      anchorSize: document.getElementById('anchor-size'),
       reader: document.getElementById('reader'),
       formFactor: document.getElementById('form-factor'),
       tagChip: document.getElementById('tag-chip'),
       tagForm: document.getElementById('tag-form'),
       power: document.getElementById('power'),
       offset: document.getElementById('offset'),
+      marker: document.getElementById('ar-marker'),
       container: document.getElementById('map-container'),
       svgLayer: document.getElementById('svg-layer')
     };
 
     const tagFormOptions = {
-      'IQC21': ['IQC21-50', /* Placeholders: 'IQC21-30' */],
-      'IQC33': ['IQC33-50', /* Placeholders: 'IQC33-16' */],
-      'IQC50': ['IQC50-50', /* Placeholders: 'IQC50-30' */]
+      'IQC21': ['IQC21-50'],
+      'IQC33': ['IQC33-50'],
+      'IQC50': ['IQC50-50']
     };
 
     function updateTagFormDropdown() {
@@ -172,26 +189,27 @@
       refreshAR();
     }
 
-  function refreshAR() {
-    const filename = `${ui.reader.value}_${ui.formFactor.value}_${ui.tagForm.value}_${ui.power.value}.svg`;
-    ui.svgLayer.setAttribute('dynamic-svg', 'src', filename);
-  
-    // 1 AR unit = 46mm (the physical width of our printed marker)
-    const offsetMm = parseInt(ui.offset.value); 
-    const yOffsetARUnits = offsetMm / 46; 
-  
-    // Apply offset to the Y-axis (pushing straight out toward the camera)
-    ui.container.setAttribute('position', `0 ${yOffsetARUnits} 0`);
-  }
-    
-    const marker = document.querySelector('a-marker');
-    marker.addEventListener('markerFound', () => {
-      console.log('>>> MARKER DETECTED! <<<');
-    });
-    marker.addEventListener('markerLost', () => {
-      console.log('--- Marker Lost ---');
-    });
+    function refreshAR() {
+      const markerSizeMm = parseFloat(ui.anchorSize.value) || 46;
+
+      // Update AR.js tracking size in meters for camera distance calculations
+      ui.marker.setAttribute('size', (markerSizeMm / 1000).toString());
+
+      // Update SVG source and dynamic marker scale
+      const filename = `${ui.reader.value}_${ui.formFactor.value}_${ui.tagForm.value}_${ui.power.value}.svg`;
+      ui.svgLayer.setAttribute('dynamic-svg', {
+        src: filename,
+        markerSize: markerSizeMm
+      });
+      
+      // Calculate Y-axis offset relative to the marker's local coordinate frame
+      const offsetMm = parseFloat(ui.offset.value) || 0;
+      const yOffsetARUnits = offsetMm / markerSizeMm;
+      ui.container.setAttribute('position', `0 ${yOffsetARUnits} 0`);
+    }
+
     // Attach listeners
+    ui.anchorSize.addEventListener('input', refreshAR);
     ui.reader.addEventListener('change', refreshAR);
     ui.formFactor.addEventListener('change', refreshAR);
     ui.tagChip.addEventListener('change', updateTagFormDropdown);
