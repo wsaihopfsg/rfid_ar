@@ -108,7 +108,13 @@
           const group = new THREE.Group();
           
           // Apply 0.001 scale to convert millimeter SVG coordinates to AR meters
-          group.scale.set(0.001, 0.001, 0.001); // Negative Y flips the SVG right-side up
+          //group.scale.set(0.001, 0.001, 0.001); // Negative Y flips the SVG right-side up
+          // Convert millimeter SVG coordinates into AR.js relative units
+          // where 1 AR unit = the physical marker width (46mm)
+          const markerSizeMm = 46;
+          const scaleFactor = 1 / markerSizeMm; 
+
+          group.scale.set(scaleFactor, -scaleFactor, scaleFactor);
           
           for (let i = 0; i < paths.length; i++) {
             const path = paths[i];
