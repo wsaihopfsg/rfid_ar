@@ -1,9 +1,0 @@
-<svg width="800" height="550" xmlns="http://www.w3.org/2000/svg">
- <!-- 1 unit = 1mm. Origin (0,0) is placed exactly where the red X was. -->
-
- <!-- Semi-transparent green coverage area -->
- <g>
-  <title>Layer 1</title>
-  <path id="svg_1" fill-opacity="0.5" fill="#008000" d="m411,104c100,0 175,50 175,175c0,75 -50,100 -50,125c64,-33 136,-58 200,75l-650,0c56,-128 137,-111 200,-75c0,-25 -50,-50 -50,-125c0,-125 75,-175 175,-175z"/>
- </g>
-</svg>
