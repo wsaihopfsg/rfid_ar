@@ -146,7 +146,7 @@
               
               // Define the 3D thickness (150mm)
               const extrudeSettings = {
-                depth: 8, 
+                depth: 20, 
                 bevelEnabled: false // Keeps the mathematical edges sharp
               };
               
@@ -154,7 +154,7 @@
               const geometry = new THREE.ExtrudeGeometry(shapes[j], extrudeSettings);
               
               // Shift the geometry so the marker sits in the exact middle of the 150mm thickness
-              geometry.translate(0, 0, -4);
+              geometry.translate(0, 0, -extrudeSettings.depth/2);
               
               const mesh = new THREE.Mesh(geometry, material);
               group.add(mesh);
