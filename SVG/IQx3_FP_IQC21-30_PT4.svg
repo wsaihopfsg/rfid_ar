@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-250 -300 500 350" width="500mm" height="350mm">
+  <!-- 1 unit = 1mm. Origin (0,0) is at the bottom centerline. -->
+  <!-- Total Width: 400mm (-200 to 200). Read Range: 240mm (0 to -240). -->
+  <path d="M -200 0 
+           C -200 -30, -170 -60, -140 -60 
+           C -110 -60, -85 -50, -75 -40 
+           C -65 -30, -120 -80, -120 -140 
+           C -120 -195, -55 -240, 0 -240 
+           C 55 -240, 120 -195, 120 -140 
+           C 120 -80, 65 -30, 75 -40 
+           C 85 -50, 110 -60, 140 -60 
+           C 170 -60, 200 -30, 200 0 
+           Z" 
+        fill="#008000" fill-opacity="0.5" />
+</svg>
