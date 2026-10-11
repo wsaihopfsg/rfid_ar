@@ -81,7 +81,7 @@
       type="pattern" 
       url="pattern-Assym_F.patt" 
       patternRatio="0.5" 
-      size="0.046"
+      size="0.093"
       smooth="true"
       smoothCount="10"
       smoothTolerance="0.02"
@@ -212,25 +212,43 @@
       refreshAR();
     }
 
-    function refreshAR() {
-      const markerSizeMm = parseFloat(ui.anchorSize.value) || 46;
+function refreshAR() {
+  const markerSizeMm = parseFloat(ui.anchorSize.value) || 93;
+  const newSizeStr = (markerSizeMm / 1000).toString();
 
-      // Update AR.js tracking size in meters for camera distance calculations
-      ui.marker.setAttribute('size', (markerSizeMm / 1000).toString());
-
-      // Update SVG source and dynamic marker scale
-      const filename = `SVG/${ui.reader.value}_${ui.formFactor.value}_${ui.tagForm.value}_${ui.power.value}.svg`;
-      ui.svgLayer.setAttribute('dynamic-svg', {
-        src: filename,
-        markerSize: markerSizeMm
-      });
-      
-      // Calculate Y-axis offset relative to the marker's local coordinate frame
-      const offsetMm = parseFloat(ui.offset.value) || 0;
-      const yOffsetARUnits = offsetMm / markerSizeMm;
-      ui.container.setAttribute('position', `0 ${yOffsetARUnits} 0`);
+  // 1. Force AR.js to update tracking by swapping the marker element
+  if (ui.marker.getAttribute('size') !== newSizeStr) {
+    const scene = ui.marker.parentNode;
+    const newMarker = document.createElement('a-marker');
+    
+    // Copy all attributes from the old marker
+    for (let attr of ui.marker.attributes) {
+      newMarker.setAttribute(attr.name, attr.value);
     }
+    
+    // Apply the new physical size for the camera
+    newMarker.setAttribute('size', newSizeStr);
+    
+    // Move the 3D content container into the new marker
+    newMarker.appendChild(ui.container);
+    
+    // Swap the markers in the DOM and update the UI reference
+    scene.replaceChild(newMarker, ui.marker);
+    ui.marker = newMarker;
+  }
 
+  // 2. Update SVG source and dynamic marker scale
+  const filename = `SVG/${ui.reader.value}_${ui.formFactor.value}_${ui.tagForm.value}_${ui.power.value}.svg`;
+  ui.svgLayer.setAttribute('dynamic-svg', {
+    src: filename,
+    markerSize: markerSizeMm
+  });
+  
+  // 3. Calculate Y-axis offset relative to the marker's local coordinate frame
+  const offsetMm = parseFloat(ui.offset.value) || 0;
+  const yOffsetARUnits = offsetMm / markerSizeMm;
+  ui.container.setAttribute('position', `0 ${yOffsetARUnits} 0`);
+}
     // Attach listeners
     ui.anchorSize.addEventListener('input', refreshAR);
     ui.reader.addEventListener('change', refreshAR);
