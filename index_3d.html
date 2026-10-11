@@ -76,7 +76,16 @@
   <a-scene embedded arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false;">
     
     <!-- URL points to your trained pattern file -->
-    <a-marker id="ar-marker" type="pattern" url="pattern-Assym_F.patt" patternRatio="0.5" size="0.046">
+    <a-marker 
+      id="ar-marker" 
+      type="pattern" 
+      url="pattern-Assym_F.patt" 
+      patternRatio="0.5" 
+      size="0.046"
+      smooth="true"
+      smoothCount="10"
+      smoothTolerance="0.02"
+      smoothThreshold="5">
       
       <!-- Container handles the physical offset along the Y-axis (normal to the marker) -->
       <a-entity id="map-container" position="0 0 0">
